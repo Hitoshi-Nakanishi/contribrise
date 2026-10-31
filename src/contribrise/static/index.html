@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Contribrise — See your learning curve.</title>
 
+    <script src="/theme.js"></script>
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
@@ -12,10 +13,17 @@
       <header>
         <div class="header-row">
           <p class="eyebrow">GITHUB / LEARNING CURVE</p>
-          <select id="language" aria-label="Language / 言語">
-            <option value="ja">日本語</option>
-            <option value="en">English</option>
-          </select>
+          <div class="header-controls">
+            <select id="theme" aria-label="Theme / 配色">
+              <option value="system" data-i18n="themeSystem">システム</option>
+              <option value="light" data-i18n="themeLight">ライト</option>
+              <option value="dark" data-i18n="themeDark">ダーク</option>
+            </select>
+            <select id="language" aria-label="Language / 言語">
+              <option value="ja">日本語</option>
+              <option value="en">English</option>
+            </select>
+          </div>
         </div>
         <h1>Contribrise</h1>
         <p data-i18n="subtitle">学びの軌跡を、見える形に。</p>

@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent / "static"
 APP_ID = "contribrise"
 USERNAME = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?\Z")
 CACHE = {}
@@ -145,10 +145,10 @@ class Handler(BaseHTTPRequestHandler):
                 (ROOT / "index.html").read_text(encoding="utf-8"),
                 "text/html; charset=utf-8",
             )
-        elif parsed.path in ("/app.js", "/style.css"):
+        elif parsed.path in ("/app.js", "/theme.js", "/style.css"):
             content_type = (
                 "text/javascript; charset=utf-8"
-                if parsed.path == "/app.js"
+                if parsed.path.endswith(".js")
                 else "text/css; charset=utf-8"
             )
             self.reply(

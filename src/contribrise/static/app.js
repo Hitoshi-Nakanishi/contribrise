@@ -19,6 +19,10 @@
   const dashes = ["", "7 4", "2 3", "9 3 2 3", "4 3"];
   const translations = {
     ja: {
+      theme: "配色",
+      themeSystem: "システム",
+      themeLight: "ライト",
+      themeDark: "ダーク",
       subtitle: "学びの軌跡を、見える形に。",
       users: "GitHubユーザー名",
       year: "年",
@@ -67,6 +71,10 @@
         "{user}: GitHubのカレンダーを読み取れませんでした。再度お試しください。",
     },
     en: {
+      theme: "Theme",
+      themeSystem: "System",
+      themeLight: "Light",
+      themeDark: "Dark",
       subtitle: "See your learning curve.",
       users: "GitHub usernames",
       year: "Year",
@@ -152,6 +160,7 @@
   function renderLanguage() {
     document.documentElement.lang = language;
     $("language").value = language;
+    $("theme").setAttribute("aria-label", t("theme"));
     document
       .querySelectorAll("[data-i18n]")
       .forEach((node) => (node.textContent = t(node.dataset.i18n)));
@@ -668,6 +677,15 @@
     chart.prepend(svg);
   }
   form.addEventListener("submit", load);
+  $("theme").value = document.documentElement.style.colorScheme || "system";
+  $("theme").addEventListener("change", (event) => {
+    const theme = event.target.value;
+    document.documentElement.style.colorScheme =
+      theme === "system" ? "light dark" : theme;
+    try {
+      localStorage.setItem("contribrise-theme", theme);
+    } catch {}
+  });
   mode.addEventListener("change", () => {
     if (mode.value === "years") {
       input.value = input.value.split(/[,\s、，]+/).filter(Boolean)[0] || "";

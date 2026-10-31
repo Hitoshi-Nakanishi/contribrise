@@ -1,5 +1,7 @@
 # README maintenance
 
+- Keep the Python package under `src/contribrise` and its browser assets under `static`. Avoid runtime dependencies and framework layers.
+
 - Review established, widely used open-source READMEs when changing the public introduction.
 - Lead with what the app does, a representative screenshot, and the shortest complete path to running it.
 - Keep the English and Japanese READMEs aligned. Put implementation details after the usage guide.

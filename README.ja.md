@@ -15,7 +15,7 @@ _年別比較と自動2軸表示。スクリーンショットのユーザー名
 - **自分の各年を比較。** 最大10年を、同じ月日で重ねて表示します。
 - **活動数が大きく変わっても見やすく。** 自動2軸表示で、活動の少ない年の曲線も読み取れます。
 - **複数のアカウントを比較。** 最大5人を並べ、カーソルやタップでその日の累積値を確認できます。
-- **小さく、すぐ使える。** 日本語・英語、設定の保存、比較条件を復元できるURL。ビルドや追加パッケージは不要です。
+- **小さく、すぐ使える。** 日本語・英語、ライト／ダーク／システム配色、設定の保存、比較条件を復元できるURL。ビルドや追加パッケージは不要です。
 
 活動数は、スキルや学習成果そのものを測る指標ではありません。能力を順位付けするためではなく、自分の習慣を振り返るために使います。
 
@@ -27,10 +27,10 @@ _年別比較と自動2軸表示。スクリーンショットのユーザー名
 gh auth login
 gh repo clone Hitoshi-Nakanishi/contribrise
 cd contribrise
-python app.py --open
+python src/contribrise/app.py --open
 ```
 
-最初のコマンドはGitHub CLIへのログインです。ログイン済みなら省略できます。macOSやLinuxでPythonのコマンド名が`python3`の場合は、最後のコマンドを`python3 app.py --open`にしてください。
+最初のコマンドはGitHub CLIへのログインです。ログイン済みなら省略できます。macOSやLinuxでPythonのコマンド名が`python3`の場合は、最後のコマンドを`python3 src/contribrise/app.py --open`にしてください。
 
 ブラウザでアプリが開きます。Windowsでは、clone後に`start.cmd`をダブルクリックすることもできます。`pip install`、`npm install`、データベース、アプリへのトークン入力は不要です。
 
@@ -42,7 +42,7 @@ python app.py --open
 
 ![架空の3アカウントの累積活動数を、共通の軸で比較するContribrise。](docs/images/user-comparison.png)
 
-_ユーザー別比較は同じスケールで表示します。画面右上でEnglishと日本語を切り替えられます。_
+_ユーザー別比較は同じスケールで表示します。画面右上でEnglishと日本語、ライト／ダーク／システム配色を切り替えられます。選んだ配色は保存されます。_
 
 今年の線は取得済みの日付で止まります。うるう年でない年の2月29日など、該当するデータがない日はツールチップに「—」を表示します。比較URLにはユーザー名・比較モード・年が含まれ、Contribriseを使う別の人も同じ条件を復元できます。
 
@@ -60,7 +60,7 @@ _ユーザー別比較は同じスケールで表示します。画面右上でE
 - 既存のGitHub CLIログインを使い、GitHub GraphQL APIのContribution Calendarから直接取得します。結果はメモリー内に5分間キャッシュします。
 - 非公開活動は、ログイン中のアカウントにGitHubが表示する件数を含みます。閲覧権限によって結果が異なる場合があります。[GitHubの集計条件](https://docs.github.com/en/account-and-profile/reference/profile-contributions-reference)も参照してください。
 - アプリはこのPC内からの接続だけを受け付けます。認証情報はGitHub CLIが管理します。アクセス解析、外部スクリプト、活動履歴の保存はありません。
-- ユーザー名と言語はブラウザに保存します。ユーザー名と年は比較URLにも含まれます。
+- ユーザー名・言語・配色はブラウザに保存します。ユーザー名と年は比較URLにも含まれます。
 
 このリポジトリはローカルアプリのソース公開です。ホスティングされたサービスではなく、個人のGitHub認証情報を使ったまま公開Webサービスとして配信することには対応していません。
 
@@ -69,13 +69,22 @@ _ユーザー別比較は同じスケールで表示します。画面右上でE
 
 通常の接続先は`http://127.0.0.1:8783`です。`--port`で変更でき、別のアプリが使用中の場合は空いているポートを選びます。
 
-ブラウザを閉じても取得処理は待機します。終了を自分で操作する場合は、ターミナルから`python app.py`で起動し、使い終わったらCtrl+Cを押します。
+ブラウザを閉じても取得処理は待機します。終了を自分で操作する場合は、ターミナルから`python src/contribrise/app.py`で起動し、使い終わったらCtrl+Cを押します。
 
 </details>
 
 ## 開発
 
-`app.py`がデータを取得し、`index.html`、`style.css`、`app.js`を配信します。チャートは標準のSVGで描画します。実行時に必要なのはPythonの標準ライブラリとGitHub CLIだけです。
+Pythonパッケージは`src/contribrise`に置き、`app.py`がデータ取得と`static/`内のHTML・CSS・JavaScriptの配信を受け持ちます。チャートは標準のSVGで描画し、`theme.js`が画面の描画前に保存済みの配色を反映します。実行時に必要なのはPythonの標準ライブラリとGitHub CLIだけです。
+
+ソースからは`python src/contribrise/app.py --open`、Windowsでは`start.cmd`でも起動できます。パッケージとコマンドをインストールする場合は、次を実行します。
+
+```sh
+python -m pip install .
+contribrise --open
+```
+
+インストール後は`python -m contribrise --open`も使えます。
 
 ```sh
 python -m unittest

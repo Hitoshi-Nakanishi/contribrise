@@ -1,10 +1,13 @@
 import json
 import subprocess
+import sys
 import unittest
 from datetime import date, timedelta
+from pathlib import Path
 from unittest.mock import patch
 
-import app
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+from contribrise import app  # noqa: E402 - tests also run without installing the package
 
 
 def response(total=3):
@@ -43,7 +46,7 @@ class ContributionTests(unittest.TestCase):
     def setUp(self):
         app.CACHE.clear()
 
-    @patch("app.subprocess.run")
+    @patch("contribrise.app.subprocess.run")
     def test_calendar_and_case_insensitive_cache(self, run):
         run.return_value = response()
         result = app.contributions("octocat", 2025)
@@ -53,14 +56,14 @@ class ContributionTests(unittest.TestCase):
         self.assertEqual(app.contributions("OCTOCAT", 2025), result)
         run.assert_called_once()
 
-    @patch("app.subprocess.run")
+    @patch("contribrise.app.subprocess.run")
     def test_invalid_username_never_runs_cli(self, run):
         with self.assertRaises(app.AppError) as caught:
             app.contributions("--invalid", 2025)
         self.assertEqual(caught.exception.code, "username")
         run.assert_not_called()
 
-    @patch("app.subprocess.run")
+    @patch("contribrise.app.subprocess.run")
     def test_missing_user_has_translatable_error(self, run):
         run.return_value = subprocess.CompletedProcess(
             [], 1, json.dumps({"errors": [{"type": "NOT_FOUND"}]})
@@ -69,7 +72,7 @@ class ContributionTests(unittest.TestCase):
             app.contributions("octocat", 2025)
         self.assertEqual(caught.exception.code, "notFound")
 
-    @patch("app.subprocess.run")
+    @patch("contribrise.app.subprocess.run")
     def test_incomplete_calendar_is_not_cached(self, run):
         payload = json.loads(response().stdout)
         payload["data"]["user"]["contributionsCollection"]["contributionCalendar"][
