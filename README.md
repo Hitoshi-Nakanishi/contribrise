@@ -6,9 +6,9 @@ Turn GitHub's contribution calendar into cumulative curves. Compare your years, 
 
 [日本語](README.ja.md) · [Quick start](#quick-start) · [How to use](#how-to-use)
 
-![Contribrise comparing five years of a fictional user's activity, with the most active year on a separate right axis.](docs/images/year-comparison.png)
+![Contribrise in dark mode comparing five years, with automatic dual axes and Save HTML and Save PNG buttons.](docs/images/year-comparison.png)
 
-_Year-by-year comparison with automatic dual axes. All screenshots use fictional usernames and synthetic data._
+_Year-by-year comparison in dark mode, with automatic dual axes and HTML/PNG export. All screenshots use fictional usernames and synthetic data._
 
 ## What you can do
 
@@ -41,9 +41,9 @@ The app opens in your browser. On Windows, you can also double-click `start.cmd`
 3. Click **Show**. Hover or tap for daily cumulative values; click a legend entry to hide or restore a line.
 4. Click **Save HTML** to download the current view as a single, read-only HTML file. It includes the chart, visible lines, language, theme, totals, and fetch time. Open it offline without running Contribrise; it contains no scripts or credentials. Choose **Save PNG** for a single image with the same chart, visible lines, totals, language, and theme. Both formats are generated locally in your browser.
 
-![Contribrise comparing the cumulative activity of three fictional accounts on a shared axis.](docs/images/user-comparison.png)
+![Contribrise in light mode comparing three fictional accounts, with theme selection and Save HTML and Save PNG buttons.](docs/images/user-comparison.png)
 
-_Account comparison on one shared scale. Switch between English and 日本語, or choose a light, dark, or system theme at the top right. Your theme is remembered._
+_Account comparison in light mode on one shared scale. Save the current view as HTML or PNG. Switch language and theme at the top right; your choices are remembered._
 
 The current year's line stops at the latest available date. Missing dates, including a leap day in a non-leap year, show a dash in the tooltip. Comparison URLs include the usernames, mode, and years, so another Contribrise user can restore the same view.
 
