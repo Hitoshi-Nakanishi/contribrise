@@ -6,7 +6,7 @@ GitHubのContribution Calendarを、年初からの累積曲線に。自分の�
 
 [English](README.md) · [すぐに使う](#すぐに使う) · [使い方](#使い方)
 
-![ダークモードで5年分を比較するContribrise。自動2軸表示とSave HTML・Save PNGボタンが見えます。](docs/images/year-comparison.png)
+![ダークモードで5年分を比較するContribrise。自動2軸表示と「HTMLを保存」・「PNGを保存」ボタンが見えます。](docs/images/year-comparison-ja.png)
 
 _ダークモードの年別比較・自動2軸表示とHTML／PNG保存。スクリーンショットのユーザー名とデータはすべて架空のサンプルです。_
 
@@ -41,7 +41,7 @@ python src/contribrise/app.py --open
 3. 「表示」を押します。カーソルやタップで日ごとの累積値を確認し、凡例を押すと線の表示を切り替えられます。
 4. 「HTMLを保存」で、表示中のページを1つの読み取り専用HTMLファイルに保存できます。チャート・表示中の線・言語・配色・累積値・取得時刻を含み、Contribriseを起動せずオフラインで開けます。スクリプトや認証情報は含みません。「PNGを保存」では、同じチャート・表示中の線・累積値・言語・配色を1枚の画像に保存できます。どちらもブラウザ内で生成します。
 
-![ライトモードで架空の3アカウントを比較するContribrise。配色切り替えとSave HTML・Save PNGボタンが見えます。](docs/images/user-comparison.png)
+![ライトモードで架空の3アカウントを比較するContribrise。配色切り替えと「HTMLを保存」・「PNGを保存」ボタンが見えます。](docs/images/user-comparison-ja.png)
 
 _ライトモードのユーザー別比較は同じスケールで表示します。表示中の画面をHTMLやPNGに保存できます。画面右上で言語と配色を切り替えられ、選んだ設定は保存されます。_
 
