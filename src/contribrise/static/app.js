@@ -19,7 +19,8 @@
   const dashes = ["", "7 4", "2 3", "9 3 2 3", "4 3"];
   const translations = {
     ja: {
-      saveSnapshot: "スナップショットを保存",
+      saveSnapshot: "HTMLを保存",
+      savePng: "PNGを保存",
       snapshotSaved: "読み取り専用スナップショット · {time} 保存",
       snapshotFailed:
         "スナップショットを保存できませんでした。もう一度お試しください。",
@@ -75,7 +76,8 @@
         "{user}: GitHubのカレンダーを読み取れませんでした。再度お試しください。",
     },
     en: {
-      saveSnapshot: "Save snapshot",
+      saveSnapshot: "Save HTML",
+      savePng: "Save PNG",
       snapshotSaved: "Read-only snapshot · Saved {time}",
       snapshotFailed: "Could not save the snapshot. Please try again.",
       theme: "Theme",
@@ -302,6 +304,7 @@
         : users.map((name) => ({ name, value: requestedYear }));
     submit.disabled = true;
     $("save-snapshot").disabled = true;
+    $("save-png").disabled = true;
     submit.textContent = t("loadingButton");
     setStatus("loading");
     try {
@@ -428,6 +431,7 @@
   function draw() {
     $("save-snapshot").disabled =
       submit.disabled || !series.some((s) => s.visible);
+    $("save-png").disabled = $("save-snapshot").disabled;
     chart.querySelector("svg")?.remove();
     chart.querySelector(".empty")?.remove();
     tip.hidden = true;
@@ -686,12 +690,12 @@
     });
     chart.prepend(svg);
   }
-  $("save-snapshot").addEventListener("click", () => {
+  async function saveSnapshot(format) {
     try {
       const snapshot = document.documentElement.cloneNode(true);
       snapshot
         .querySelectorAll(
-          'script,link[rel="stylesheet"],#form,.header-controls,#status,#save-snapshot,#tooltip,[data-hover],#chart [visibility]',
+          'script,link[rel="stylesheet"],#form,.header-controls,#status,.snapshot-actions,#tooltip,[data-hover],#chart [visibility]',
         )
         .forEach((node) => node.remove());
       snapshot.style.colorScheme =
@@ -719,20 +723,140 @@
         }).format(new Date()),
       });
       snapshot.querySelector("header").append(note);
-      const url = URL.createObjectURL(
-        new Blob(["<!doctype html>\n" + snapshot.outerHTML], {
-          type: "text/html;charset=utf-8",
-        }),
-      );
+      const blob =
+        format === "png"
+          ? await snapshotPng(snapshot)
+          : new Blob(["<!doctype html>\n" + snapshot.outerHTML], {
+              type: "text/html;charset=utf-8",
+            });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "contribrise-snapshot.html";
+      link.download = `contribrise-snapshot.${format}`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
       setStatus("snapshotFailed", true);
     }
-  });
+  }
+  async function snapshotPng(snapshot) {
+    await document.fonts.ready;
+    const width = Math.max(
+      640,
+      Math.ceil(document.querySelector("main").clientWidth),
+    );
+    const canvas = document.createElement("canvas"),
+      context = canvas.getContext("2d");
+    const font = getComputedStyle(document.body).fontFamily;
+    const foreground = getComputedStyle(document.body).color;
+    const muted = getComputedStyle($("updated")).color;
+    const svg = chart.querySelector("svg").cloneNode(true);
+    const originals = [
+      chart.querySelector("svg"),
+      ...chart.querySelectorAll("svg *"),
+    ];
+    [svg, ...svg.querySelectorAll("*")].forEach((node, i) => {
+      const computed = getComputedStyle(originals[i]);
+      for (const property of [
+        "fill",
+        "stroke",
+        "font-family",
+        "font-size",
+        "font-weight",
+      ])
+        node.style.setProperty(property, computed.getPropertyValue(property));
+    });
+    svg
+      .querySelectorAll("[data-hover],[visibility]")
+      .forEach((node) => node.remove());
+    const svgWidth = Number(svg.getAttribute("width")),
+      svgHeight = Number(svg.getAttribute("height"));
+    const imageUrl =
+      "data:image/svg+xml;charset=utf-8," +
+      encodeURIComponent(new XMLSerializer().serializeToString(svg));
+    const image = new Image();
+    image.src = imageUrl;
+    await image.decode();
+    const margin = 32,
+      available = width - margin * 2;
+    let y = margin;
+    const lines = [];
+    function text(value, size = 14, color = foreground) {
+      context.font = `${size}px ${font}`;
+      let line = "";
+      for (const character of value) {
+        if (line && context.measureText(line + character).width > available) {
+          lines.push({ text: line, size, color, y });
+          y += size * 1.5;
+          line = "";
+        }
+        line += character;
+      }
+      lines.push({ text: line, size, color, y });
+      y += size * 1.5;
+    }
+    text("Contribrise", 28);
+    text(
+      document.querySelector('[data-i18n="subtitle"]').textContent,
+      15,
+      muted,
+    );
+    text(snapshot.querySelector("header .hint").textContent, 12, muted);
+    y += 20;
+    text(document.querySelector("h2").textContent, 15);
+    text($("period").textContent, 12, muted);
+    y += 12;
+    series.forEach((s, i) => {
+      if (!s.visible) return;
+      const label =
+        s.label +
+        (series.some((item) => item.axis === 1)
+          ? ` · ${t(s.axis ? "rightAxis" : "leftAxis")}`
+          : "");
+      text(
+        `${label}   ${count(s.total)}`,
+        13,
+        getComputedStyle(chart.querySelector(`path[data-series="${s.label}"]`))
+          .stroke,
+      );
+    });
+    y += 12;
+    const imageY = y,
+      imageHeight = (available / svgWidth) * svgHeight;
+    y += imageHeight + 20;
+    text(
+      document.querySelector('[data-i18n="privateNote"]').textContent,
+      11,
+      muted,
+    );
+    text($("updated").textContent, 11, muted);
+    canvas.width = width * 2;
+    canvas.height = Math.ceil(y + margin) * 2;
+    context.scale(2, 2);
+    context.fillStyle = getComputedStyle(document.body).backgroundColor;
+    context.fillRect(0, 0, width, y + margin);
+    context.textBaseline = "top";
+    for (const line of lines) {
+      context.fillStyle = line.color;
+      context.font = `${line.size}px ${font}`;
+      context.fillText(line.text, margin, line.y);
+    }
+    context.drawImage(image, margin, imageY, available, imageHeight);
+    return await new Promise((resolve, reject) =>
+      canvas.toBlob(
+        (blob) =>
+          blob ? resolve(blob) : reject(new Error("PNG encoding failed")),
+        "image/png",
+      ),
+    );
+  }
+  document
+    .querySelectorAll("[data-export]")
+    .forEach((button) =>
+      button.addEventListener("click", () =>
+        saveSnapshot(button.dataset.export),
+      ),
+    );
   form.addEventListener("submit", load);
   $("theme").value = document.documentElement.style.colorScheme || "system";
   $("theme").addEventListener("change", (event) => {

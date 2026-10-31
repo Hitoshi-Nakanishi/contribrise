@@ -61,14 +61,28 @@
       <div class="chart-heading">
         <h2 data-i18n="chartTitle">累積Contributions</h2>
         <span id="period"></span>
-        <button
-          id="save-snapshot"
-          type="button"
-          data-i18n="saveSnapshot"
-          disabled
-        >
-          スナップショットを保存
-        </button>
+        <div class="snapshot-actions">
+          <button
+            id="save-snapshot"
+            class="snapshot-save"
+            data-export="html"
+            type="button"
+            data-i18n="saveSnapshot"
+            disabled
+          >
+            スナップショットを保存
+          </button>
+          <button
+            id="save-png"
+            class="snapshot-save"
+            data-export="png"
+            type="button"
+            data-i18n="savePng"
+            disabled
+          >
+            PNGを保存
+          </button>
+        </div>
       </div>
       <div id="legend" aria-label="比較アカウント"></div>
       <div id="chart">

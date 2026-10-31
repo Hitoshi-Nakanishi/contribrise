@@ -148,7 +148,12 @@ h2 {
   font-size: 12px;
   color: var(--muted);
 }
-#save-snapshot {
+.snapshot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.snapshot-save {
   font: inherit;
   font-size: 12px;
   color: var(--fg);
@@ -157,7 +162,7 @@ h2 {
   border-radius: 5px;
   padding: 7px 10px;
 }
-#save-snapshot:disabled {
+.snapshot-save:disabled {
   opacity: 0.5;
   cursor: default;
 }

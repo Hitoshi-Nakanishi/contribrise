@@ -39,7 +39,7 @@ The app opens in your browser. On Windows, you can also double-click `start.cmd`
 1. Choose **By year** or **By user**.
 2. Enter a username and years, or several usernames and one year. Ranges such as `2022-2026` and comma-separated years both work.
 3. Click **Show**. Hover or tap for daily cumulative values; click a legend entry to hide or restore a line.
-4. Click **Save snapshot** to download the current view as a single, read-only HTML file. It includes the chart, visible lines, language, theme, totals, and fetch time. Open it offline without running Contribrise; it contains no scripts or credentials.
+4. Click **Save HTML** to download the current view as a single, read-only HTML file. It includes the chart, visible lines, language, theme, totals, and fetch time. Open it offline without running Contribrise; it contains no scripts or credentials. Choose **Save PNG** for a single image with the same chart, visible lines, totals, language, and theme. Both formats are generated locally in your browser.
 
 ![Contribrise comparing the cumulative activity of three fictional accounts on a shared axis.](docs/images/user-comparison.png)
 
