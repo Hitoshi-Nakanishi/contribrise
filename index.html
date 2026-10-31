@@ -21,6 +21,11 @@
         <p data-i18n="subtitle">学びの軌跡を、見える形に。</p>
       </header>
       <form id="form" novalidate>
+        <label for="mode" data-i18n="compare">比較</label>
+        <select id="mode">
+          <option value="users" data-i18n="compareUsers">ユーザー別</option>
+          <option value="years" data-i18n="compareYears">年別</option>
+        </select>
         <div class="inputs">
           <div class="user-field">
             <label for="users" data-i18n="users">GitHubユーザー名</label
@@ -36,7 +41,7 @@
           </div>
           <div class="year-field">
             <label for="year" data-i18n="year">年</label
-            ><input id="year" name="year" type="number" min="2008" required />
+            ><input id="year" name="year" type="text" required />
           </div>
           <button class="submit" id="submit" type="submit">表示</button>
         </div>

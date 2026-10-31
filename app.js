@@ -4,6 +4,7 @@
     form = $("form"),
     input = $("users"),
     year = $("year"),
+    mode = $("mode"),
     status = $("status"),
     submit = $("submit"),
     chart = $("chart"),
@@ -21,6 +22,17 @@
       subtitle: "学びの軌跡を、見える形に。",
       users: "GitHubユーザー名",
       year: "年",
+      compare: "比較",
+      compareUsers: "ユーザー別",
+      compareYears: "年別",
+      years: "比較する年",
+      yearsHint:
+        "ユーザー名を1件、年をカンマ区切りか範囲で指定（最大10年）。例: 2022–2026",
+      yearsLimit:
+        "年別比較はユーザー名1件と、2008〜{year}の年を最大10件指定してください。",
+      monthDay: "月日",
+      leftAxis: "左軸",
+      rightAxis: "右軸",
       hint: "カンマ・空白で区切って最大5アカウント。",
       show: "表示",
       loadingButton: "取得中…",
@@ -58,6 +70,17 @@
       subtitle: "See your learning curve.",
       users: "GitHub usernames",
       year: "Year",
+      compare: "Compare",
+      compareUsers: "By user",
+      compareYears: "By year",
+      years: "Years to compare",
+      yearsHint:
+        "One username, up to 10 years separated by commas or a range. Example: 2022–2026",
+      yearsLimit:
+        "For yearly comparison, enter one username and up to 10 years from 2008 to {year}.",
+      monthDay: "Month / day",
+      leftAxis: "Left axis",
+      rightAxis: "Right axis",
       hint: "Up to 5 accounts, separated by commas or spaces.",
       show: "Show",
       loadingButton: "Loading…",
@@ -110,6 +133,7 @@
   year.value = currentYear;
   let series = [],
     activeYear = currentYear,
+    activeMode = "users",
     resizeTimer;
   let statusState = { messages: [], error: false };
   function renderStatus() {
@@ -131,6 +155,12 @@
     document
       .querySelectorAll("[data-i18n]")
       .forEach((node) => (node.textContent = t(node.dataset.i18n)));
+    document.querySelector('label[for="year"]').textContent = t(
+      mode.value === "years" ? "years" : "year",
+    );
+    $("hint").textContent = t(mode.value === "years" ? "yearsHint" : "hint");
+    input.placeholder =
+      mode.value === "years" ? "octocat" : "octocat, username";
     $("legend").setAttribute("aria-label", t("accounts"));
     submit.textContent = t(submit.disabled ? "loadingButton" : "show");
     if (series.length) {
@@ -152,7 +182,15 @@
   } catch {}
   const query = new URLSearchParams(location.search);
   input.value = query.get("users") || stored.users || "";
-  if (query.has("year")) year.value = query.get("year");
+  mode.value =
+    query.get("mode") ||
+    (query.has("users") ? "users" : stored.mode) ||
+    "users";
+  if (!["users", "years"].includes(mode.value)) mode.value = "users";
+  if (mode.value === "years")
+    year.value =
+      query.get("years") || stored.years || `${currentYear - 4}-${currentYear}`;
+  else if (query.has("year")) year.value = query.get("year");
   function dateText(value) {
     return value.replaceAll("-", "/");
   }
@@ -164,11 +202,14 @@
         button.setAttribute("aria-pressed", String(s.visible));
         const swatch = document.createElement("span");
         swatch.className = "swatch";
-        swatch.style.setProperty("--series", colors[i]);
-        swatch.style.borderTopStyle =
-          i === 2 ? "dotted" : i ? "dashed" : "solid";
+        swatch.style.setProperty("--series", colors[i % colors.length]);
+        swatch.style.borderTopStyle = i >= colors.length ? "dashed" : "solid";
         const name = document.createElement("span");
-        name.textContent = s.username;
+        name.textContent =
+          s.label +
+          (series.some((item) => item.axis === 1)
+            ? ` · ${t(s.axis ? "rightAxis" : "leftAxis")}`
+            : "");
         const total = document.createElement("span");
         total.className = "total";
         total.textContent = count(s.total);
@@ -208,62 +249,122 @@
       input.focus();
       return;
     }
-    const requestedYear = Number(year.value);
+    const requestedMode = mode.value;
+    const years = [];
+    for (const token of year.value.split(/[,\s、，]+/).filter(Boolean)) {
+      const range = token.match(/^(\d{4})[-–](\d{4})$/);
+      if (range) {
+        const first = Number(range[1]),
+          last = Number(range[2]);
+        if (first > last || last - first >= 10) {
+          years.push(NaN);
+          break;
+        }
+        for (let value = first; value <= last; value++) years.push(value);
+      } else years.push(/^\d{4}$/.test(token) ? Number(token) : NaN);
+    }
+    const requestedYears = [...new Set(years)].sort((a, b) => a - b);
     if (
-      !Number.isInteger(requestedYear) ||
-      requestedYear < 2008 ||
-      requestedYear > currentYear
+      !requestedYears.length ||
+      requestedYears.some(
+        (value) =>
+          !Number.isInteger(value) || value < 2008 || value > currentYear,
+      ) ||
+      (requestedMode === "users" && requestedYears.length !== 1) ||
+      (requestedMode === "years" &&
+        (users.length !== 1 || requestedYears.length > 10))
     ) {
-      setStatus("yearRange", true, { year: currentYear });
+      setStatus(requestedMode === "years" ? "yearsLimit" : "yearRange", true, {
+        year: currentYear,
+      });
       return;
     }
+    const requestedYear = requestedYears[0];
+    const requests =
+      requestedMode === "years"
+        ? requestedYears.map((value) => ({ name: users[0], value }))
+        : users.map((name) => ({ name, value: requestedYear }));
     submit.disabled = true;
     submit.textContent = t("loadingButton");
     setStatus("loading");
     try {
-      const results = await Promise.all(
-        users.map(async (name) => {
-          try {
-            const response = await fetch(
-              `/api/contributions?user=${encodeURIComponent(name)}&year=${requestedYear}`,
-              { signal: AbortSignal.timeout(25000) },
-            );
-            const data = await response.json();
-            if (!response.ok)
-              throw Object.assign(new Error(), {
-                key: data.code || "fetchFailed",
-              });
-            let cumulative = 0;
-            return {
-              ...data,
-              visible: true,
-              values: data.days.map(([date, count]) => ({
-                date,
-                x: Date.parse(date + "T00:00:00Z"),
-                y: (cumulative += count),
-                count,
-              })),
-            };
-          } catch (error) {
-            const key =
-              error instanceof TypeError
-                ? "disconnected"
-                : error.name === "TimeoutError"
-                  ? "timeout"
-                  : error.key || "fetchFailed";
-            return {
-              error: {
-                key,
-                ...(key === "disconnected"
-                  ? {}
-                  : { user: name, year: currentYear }),
-              },
-            };
-          }
-        }),
-      );
+      const results = [];
+      for (let offset = 0; offset < requests.length; offset += 3)
+        results.push(
+          ...(await Promise.all(
+            requests.slice(offset, offset + 3).map(async ({ name, value }) => {
+              try {
+                const response = await fetch(
+                  `/api/contributions?user=${encodeURIComponent(name)}&year=${value}`,
+                  { signal: AbortSignal.timeout(25000) },
+                );
+                const data = await response.json();
+                if (!response.ok)
+                  throw Object.assign(new Error(), {
+                    key: data.code || "fetchFailed",
+                  });
+                let cumulative = 0;
+                return {
+                  ...data,
+                  label:
+                    requestedMode === "years" ? String(value) : data.username,
+                  axis: 0,
+                  visible: true,
+                  values: data.days.map(([date, count]) => ({
+                    date,
+                    x: Date.parse(
+                      (requestedMode === "years"
+                        ? "2000" + date.slice(4)
+                        : date) + "T00:00:00Z",
+                    ),
+                    y: (cumulative += count),
+                    count,
+                  })),
+                };
+              } catch (error) {
+                const key =
+                  error instanceof TypeError
+                    ? "disconnected"
+                    : error.name === "TimeoutError"
+                      ? "timeout"
+                      : error.key || "fetchFailed";
+                return {
+                  error: {
+                    key,
+                    ...(key === "disconnected"
+                      ? {}
+                      : {
+                          user:
+                            requestedMode === "years"
+                              ? `${name} (${value})`
+                              : name,
+                          year: currentYear,
+                        }),
+                  },
+                };
+              }
+            }),
+          )),
+        );
       series = results.filter((result) => !result.error);
       activeYear = requestedYear;
+      activeMode = requestedMode;
+      if (activeMode === "years") {
+        const ordered = series
+          .filter((s) => s.total > 0)
+          .toSorted((a, b) => a.total - b.total);
+        let gap = 5,
+          cutoff = null;
+        for (let i = 1; i < ordered.length; i++) {
+          const ratio = ordered[i].total / ordered[i - 1].total;
+          if (ratio >= gap) {
+            gap = ratio;
+            cutoff = ordered[i - 1].total;
+          }
+        }
+        if (cutoff !== null)
+          series.forEach((s) => (s.axis = Number(s.total > cutoff)));
+      }
       legend();
       draw();
       const failures = [
@@ -276,16 +377,25 @@
       setStatus(failures, failures.length > 0);
       if (series.length) {
         $("period").textContent =
-          `${activeYear}/01/01 – ${dateText(series[0].until)}`;
+          activeMode === "years"
+            ? `${series[0].username} · ${requestedYears.join(", ")}`
+            : `${activeYear}/01/01 – ${dateText(series[0].until)}`;
         try {
           localStorage.setItem(
             "contribrise",
-            JSON.stringify({ users: users.join(", ") }),
+            JSON.stringify({
+              users: users.join(", "),
+              mode: requestedMode,
+              years: requestedYears.join(","),
+            }),
           );
         } catch {}
         const params = new URLSearchParams({
           users: users.join(","),
           year: String(activeYear),
+          ...(activeMode === "years"
+            ? { mode: "years", years: requestedYears.join(",") }
+            : { mode: "users" }),
         });
         history.replaceState(null, "", "?" + params);
       } else {
@@ -312,25 +422,35 @@
     const width = chart.clientWidth,
       height = 380,
       left = 62,
-      right = 16,
+      right = series.some((s) => s.axis === 1) ? 62 : 16,
       top = 25,
       bottom = 322;
     if (width < 100) return;
-    const start = Date.UTC(activeYear, 0, 1),
-      end = series[0].values.at(-1).x;
-    const maximum = Math.max(...series.map((s) => s.total), 1),
-      rawStep = maximum / 5,
-      magnitude = 10 ** Math.floor(Math.log10(rawStep));
-    const step = [1, 2, 2.5, 5, 10]
-        .map((v) => v * magnitude)
-        .find((v) => v >= rawStep),
-      ceiling = Math.ceil(maximum / step) * step;
+    const axisYear = activeMode === "years" ? 2000 : activeYear;
+    const start = Date.UTC(axisYear, 0, 1),
+      end =
+        activeMode === "years"
+          ? Date.UTC(axisYear, 11, 31)
+          : series[0].values.at(-1).x;
+    const scales = [0, 1].map((axis) => {
+      const maximum = Math.max(
+        ...series.filter((s) => s.axis === axis).map((s) => s.total),
+        1,
+      );
+      const rawStep = maximum / 5,
+        magnitude = 10 ** Math.floor(Math.log10(rawStep));
+      const step = [1, 2, 2.5, 5, 10]
+        .map((value) => value * magnitude)
+        .find((value) => value >= rawStep);
+      return { step, ceiling: Math.ceil(maximum / step) * step };
+    });
     const x = (t) =>
         left +
         3 +
         ((t - start) / Math.max(end - start, 86400000)) *
           (width - left - right - 6),
-      y = (n) => bottom - 3 - (n / ceiling) * (bottom - top - 6);
+      y = (n, axis = 0) =>
+        bottom - 3 - (n / scales[axis].ceiling) * (bottom - top - 6);
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("width", width);
     svg.setAttribute("height", height);
@@ -344,38 +464,58 @@
       svg.append(node);
       return node;
     }
-    add("title", {}, t("svgTitle", { year: activeYear }));
+    add(
+      "title",
+      {},
+      activeMode === "years"
+        ? t("chartTitle")
+        : t("svgTitle", { year: activeYear }),
+    );
     add(
       "desc",
       {},
-      series.map((s) => `${s.username}: ${count(s.total)}`).join(", "),
+      series
+        .map(
+          (s) =>
+            `${s.label}: ${count(s.total)}${right > 16 ? " " + t(s.axis ? "rightAxis" : "leftAxis") : ""}`,
+        )
+        .join(", "),
     );
-    for (let n = 0; n <= ceiling + 0.00001; n += step) {
-      const py = y(n);
-      add("line", {
-        x1: left,
-        y1: py,
-        x2: width - right,
-        y2: py,
-        stroke: "var(--line)",
-        "stroke-width": 1,
-      });
-      add(
-        "text",
-        { x: left - 10, y: py + 4, "text-anchor": "end" },
-        n.toLocaleString(),
-      );
-    }
+    [0, ...(right > 16 ? [1] : [])].forEach((axis) => {
+      const { step, ceiling } = scales[axis];
+      for (let n = 0; n <= ceiling + 0.00001; n += step) {
+        const py = y(n, axis);
+        if (axis === 0)
+          add("line", {
+            x1: left,
+            y1: py,
+            x2: width - right,
+            y2: py,
+            stroke: "var(--line)",
+            "stroke-width": 1,
+          });
+        add(
+          "text",
+          {
+            x: axis ? width - right + 10 : left - 10,
+            y: py + 4,
+            "text-anchor": axis ? "start" : "end",
+            "data-y-axis": axis,
+          },
+          Number(n.toFixed(3)).toLocaleString(locale()),
+        );
+      }
+    });
     const monthStep = width < 500 ? 3 : 1;
     for (let m = 0; m < 12; m += monthStep) {
-      const time = Date.UTC(activeYear, m, 1);
+      const time = Date.UTC(axisYear, m, 1);
       if (time > end) break;
       add(
         "text",
         {
           x: x(time),
           y: bottom + 25,
-          "text-anchor": m === 0 ? "start" : "middle",
+          "text-anchor": m === 0 ? "start" : m === 11 ? "end" : "middle",
         },
         language === "ja"
           ? `${m + 1}月`
@@ -393,7 +533,9 @@
         "text-anchor": "middle",
         class: "axis-title",
       },
-      t("dateAxis", { year: activeYear }),
+      activeMode === "years"
+        ? t("monthDay")
+        : t("dateAxis", { year: activeYear }),
     );
     add(
       "text",
@@ -402,14 +544,24 @@
         "text-anchor": "middle",
         class: "axis-title",
       },
-      t("valueAxis"),
+      t("valueAxis") + (right > 16 ? " · " + t("leftAxis") : ""),
     );
+    if (right > 16)
+      add(
+        "text",
+        {
+          transform: `translate(${width - 12} ${(top + bottom) / 2}) rotate(90)`,
+          "text-anchor": "middle",
+          class: "axis-title",
+        },
+        t("valueAxis") + " · " + t("rightAxis"),
+      );
     series.forEach((s, i) => {
       if (!s.visible) return;
       let path = "";
       s.values.forEach((point, index) => {
         const px = x(point.x),
-          py = y(point.y);
+          py = y(point.y, s.axis);
         path += index
           ? `H${px.toFixed(2)}V${py.toFixed(2)}`
           : `M${px.toFixed(2)},${py.toFixed(2)}`;
@@ -417,9 +569,11 @@
       add("path", {
         d: path,
         fill: "none",
-        stroke: colors[i],
+        stroke: colors[i % colors.length],
         "stroke-width": 2,
-        "stroke-dasharray": dashes[i],
+        "stroke-dasharray": dashes[Math.floor(i / colors.length)],
+        "data-series": s.label,
+        "data-axis": s.axis,
       });
     });
     const guide = add("line", {
@@ -431,7 +585,11 @@
       visibility: "hidden",
     });
     const markers = series.map((s, i) =>
-      add("circle", { r: 4, fill: colors[i], visibility: "hidden" }),
+      add("circle", {
+        r: 4,
+        fill: colors[i % colors.length],
+        visibility: "hidden",
+      }),
     );
     let pinned = false;
     function show(event) {
@@ -439,35 +597,42 @@
         x(start),
         Math.min(x(end), event.clientX - svg.getBoundingClientRect().left),
       );
-      const t =
+      const timestamp =
         start +
         ((px - x(start)) / Math.max(x(end) - x(start), 1)) * (end - start);
-      const index = Math.max(
-        0,
-        Math.min(
-          series[0].values.length - 1,
-          Math.floor((t - start) / 86400000 + 1e-7),
-        ),
-      );
+      const day =
+        start + Math.floor((timestamp - start) / 86400000 + 1e-7) * 86400000;
       guide.setAttribute("x1", px);
       guide.setAttribute("x2", px);
       guide.setAttribute("visibility", "visible");
       tip.replaceChildren();
       const date = document.createElement("div");
       date.className = "tip-date";
-      date.textContent = dateText(series[0].values[index].date);
+      date.textContent = dateText(
+        new Date(day).toISOString().slice(activeMode === "years" ? 5 : 0, 10),
+      );
       tip.append(date);
       series.forEach((s, i) => {
         markers[i].setAttribute("visibility", s.visible ? "visible" : "hidden");
         if (!s.visible) return;
+        const point = s.values.findLast((point) => point.x <= day);
+        const available =
+          point &&
+          day <= s.values.at(-1).x &&
+          (activeMode !== "years" ||
+            new Date(day).toISOString().slice(5, 10) !== "02-29" ||
+            point.x === day);
+        markers[i].setAttribute("visibility", available ? "visible" : "hidden");
         markers[i].setAttribute("cx", px);
-        markers[i].setAttribute("cy", y(s.values[index].y));
+        if (available) markers[i].setAttribute("cy", y(point.y, s.axis));
         const row = document.createElement("div");
         row.className = "tip-row";
         const name = document.createElement("span");
-        name.textContent = s.username;
+        name.textContent =
+          s.label +
+          (right > 16 ? " · " + t(s.axis ? "rightAxis" : "leftAxis") : "");
         const count = document.createElement("strong");
-        count.textContent = s.values[index].y.toLocaleString();
+        count.textContent = available ? point.y.toLocaleString(locale()) : "—";
         row.append(name, count);
         tip.append(row);
       });
@@ -503,6 +668,13 @@
     chart.prepend(svg);
   }
   form.addEventListener("submit", load);
+  mode.addEventListener("change", () => {
+    if (mode.value === "years") {
+      input.value = input.value.split(/[,\s、，]+/).filter(Boolean)[0] || "";
+      year.value = `${currentYear - 4}-${currentYear}`;
+    } else year.value = String(currentYear);
+    renderLanguage();
+  });
   new ResizeObserver(() => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(draw, 50);

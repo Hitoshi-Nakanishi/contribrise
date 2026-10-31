@@ -18,6 +18,10 @@ On Windows, double-click `start.cmd`. The app runs at `http://127.0.0.1:8783`; u
 
 Enter up to five GitHub usernames, separated by commas or spaces, and choose a year. Hover or tap the chart for daily cumulative values. Click an account in the legend to hide its line. The language switch, usernames, and comparison links make returning to a view easy.
 
+Choose **By year** to compare one user's years on the same month/day axis. Enter up to ten years as a list or range, such as `2022-2026`. Each year keeps its own calendar, including leap days; the current year's line stops at the latest available date. Missing dates show a dash in the tooltip.
+
+Yearly comparisons automatically use a second axis when adjacent nonzero totals, sorted by size, have a ratio of at least five. The largest qualifying gap separates the groups: smaller totals use the left axis, larger totals use the right. Both axes start at zero, and the legend and tooltip identify the axis for every year. Similar totals share one axis. Axis assignment stays stable when hiding lines.
+
 The background process stays available after closing the browser. To run with an explicit stop control, use `python app.py` in a terminal and press Ctrl+C when finished.
 
 ## Data and privacy
