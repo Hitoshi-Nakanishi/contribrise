@@ -19,6 +19,10 @@
   const dashes = ["", "7 4", "2 3", "9 3 2 3", "4 3"];
   const translations = {
     ja: {
+      saveSnapshot: "スナップショットを保存",
+      snapshotSaved: "読み取り専用スナップショット · {time} 保存",
+      snapshotFailed:
+        "スナップショットを保存できませんでした。もう一度お試しください。",
       theme: "配色",
       themeSystem: "システム",
       themeLight: "ライト",
@@ -71,6 +75,9 @@
         "{user}: GitHubのカレンダーを読み取れませんでした。再度お試しください。",
     },
     en: {
+      saveSnapshot: "Save snapshot",
+      snapshotSaved: "Read-only snapshot · Saved {time}",
+      snapshotFailed: "Could not save the snapshot. Please try again.",
       theme: "Theme",
       themeSystem: "System",
       themeLight: "Light",
@@ -294,6 +301,7 @@
         ? requestedYears.map((value) => ({ name: users[0], value }))
         : users.map((name) => ({ name, value: requestedYear }));
     submit.disabled = true;
+    $("save-snapshot").disabled = true;
     submit.textContent = t("loadingButton");
     setStatus("loading");
     try {
@@ -418,6 +426,8 @@
     }
   }
   function draw() {
+    $("save-snapshot").disabled =
+      submit.disabled || !series.some((s) => s.visible);
     chart.querySelector("svg")?.remove();
     chart.querySelector(".empty")?.remove();
     tip.hidden = true;
@@ -676,6 +686,53 @@
     });
     chart.prepend(svg);
   }
+  $("save-snapshot").addEventListener("click", () => {
+    try {
+      const snapshot = document.documentElement.cloneNode(true);
+      snapshot
+        .querySelectorAll(
+          'script,link[rel="stylesheet"],#form,.header-controls,#status,#save-snapshot,#tooltip,[data-hover],#chart [visibility]',
+        )
+        .forEach((node) => node.remove());
+      snapshot.style.colorScheme =
+        $("theme").value === "system"
+          ? matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light"
+          : $("theme").value;
+      const style = document.createElement("style");
+      style.textContent =
+        Array.from(document.styleSheets, (sheet) =>
+          Array.from(sheet.cssRules, (rule) => rule.cssText).join("\n"),
+        ).join("\n") +
+        "\n#chart{min-height:0}#chart svg{width:100%;height:auto}#legend button{cursor:default}";
+      snapshot.querySelector("head").append(style);
+      snapshot
+        .querySelectorAll("button")
+        .forEach((button) => (button.disabled = true));
+      const note = document.createElement("p");
+      note.className = "hint";
+      note.textContent = t("snapshotSaved", {
+        time: new Intl.DateTimeFormat(locale(), {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }).format(new Date()),
+      });
+      snapshot.querySelector("header").append(note);
+      const url = URL.createObjectURL(
+        new Blob(["<!doctype html>\n" + snapshot.outerHTML], {
+          type: "text/html;charset=utf-8",
+        }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "contribrise-snapshot.html";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setStatus("snapshotFailed", true);
+    }
+  });
   form.addEventListener("submit", load);
   $("theme").value = document.documentElement.style.colorScheme || "system";
   $("theme").addEventListener("change", (event) => {

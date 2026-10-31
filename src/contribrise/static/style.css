@@ -148,6 +148,19 @@ h2 {
   font-size: 12px;
   color: var(--muted);
 }
+#save-snapshot {
+  font: inherit;
+  font-size: 12px;
+  color: var(--fg);
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 7px 10px;
+}
+#save-snapshot:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 #legend {
   display: flex;
   flex-wrap: wrap;
