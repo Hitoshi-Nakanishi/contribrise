@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contribrise — See your learning curve.</title>
+
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="header-row">
+          <p class="eyebrow">GITHUB / LEARNING CURVE</p>
+          <select id="language" aria-label="Language / 言語">
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+        <h1>Contribrise</h1>
+        <p data-i18n="subtitle">学びの軌跡を、見える形に。</p>
+      </header>
+      <form id="form" novalidate>
+        <div class="inputs">
+          <div class="user-field">
+            <label for="users" data-i18n="users">GitHubユーザー名</label
+            ><input
+              id="users"
+              name="users"
+              placeholder="octocat, username"
+              autocomplete="off"
+              spellcheck="false"
+              required
+              aria-describedby="hint"
+            />
+          </div>
+          <div class="year-field">
+            <label for="year" data-i18n="year">年</label
+            ><input id="year" name="year" type="number" min="2008" required />
+          </div>
+          <button class="submit" id="submit" type="submit">表示</button>
+        </div>
+        <p id="hint" class="hint" data-i18n="hint">
+          カンマ・空白で区切って最大5アカウント。
+        </p>
+      </form>
+      <div id="status" role="status" aria-live="polite"></div>
+      <div class="chart-heading">
+        <h2 data-i18n="chartTitle">累積Contributions</h2>
+        <span id="period"></span>
+      </div>
+      <div id="legend" aria-label="比較アカウント"></div>
+      <div id="chart">
+        <div class="empty">
+          GitHubユーザー名を入力して、学びの軌跡を見てみましょう。
+        </div>
+        <div id="tooltip" role="tooltip" hidden></div>
+      </div>
+      <footer>
+        <span data-i18n="privateNote"
+          >非公開活動は、プロフィールで件数が公開されている分を含みます。</span
+        >
+        <span id="updated"
+          >出典:
+          <a href="https://github.com" target="_blank" rel="noreferrer"
+            >GitHub</a
+          ></span
+        >
+      </footer>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
