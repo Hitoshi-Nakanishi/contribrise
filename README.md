@@ -2,41 +2,80 @@
 
 **See your learning curve.**
 
-Compare cumulative GitHub contributions from January 1. A small, local app for reflecting on the rhythm of practice, with English and Japanese interfaces. Activity is a trace of practice, not a measure of skill.
+Turn GitHub's contribution calendar into cumulative curves. Compare your years, see changes in your pace, or put a few accounts side by side.
 
-[日本語](README.ja.md)
+[日本語](README.ja.md) · [Quick start](#quick-start) · [How to use](#how-to-use)
 
-## Run
+![Contribrise comparing five years of a fictional user's activity, with the most active year on a separate right axis.](docs/images/year-comparison.png)
 
-Requires Python 3.10+, [GitHub CLI](https://cli.github.com/) signed in with `gh auth login`, and an internet connection. No Python packages, JavaScript dependencies, build step, or token entry in the app.
+_Year-by-year comparison with automatic dual axes. All screenshots use fictional usernames and synthetic data._
+
+## What you can do
+
+- **Compare your years.** Overlay up to ten years on the same month/day axis.
+- **See quiet and busy years clearly.** Automatic dual axes keep smaller curves visible when activity changes sharply.
+- **Compare accounts.** Show up to five users together, with exact cumulative values on hover or tap.
+- **Keep it simple.** English and Japanese, remembered preferences, and URLs that restore a comparison. No build step or extra packages.
+
+Contributions show activity, not skill or learning outcomes. Use the curves to reflect on your habits, not to rank ability.
+
+## Quick start
+
+Install [Python 3.10+](https://www.python.org/downloads/) and [GitHub CLI](https://cli.github.com/), then run:
 
 ```sh
+gh auth login
+gh repo clone Hitoshi-Nakanishi/contribrise
+cd contribrise
 python app.py --open
 ```
 
-On Windows, double-click `start.cmd`. The app runs at `http://127.0.0.1:8783`; use `--port` to select another port. If that port is occupied by another app, Contribrise selects an available one.
+The first command signs GitHub CLI in; skip it if you are already signed in. On macOS or Linux, use `python3` if your Python command is named that way.
 
-Enter up to five GitHub usernames, separated by commas or spaces, and choose a year. Hover or tap the chart for daily cumulative values. Click an account in the legend to hide its line. The language switch, usernames, and comparison links make returning to a view easy.
+The app opens in your browser. On Windows, you can also double-click `start.cmd` after cloning. There is no `pip install`, `npm install`, database, or token field in the app.
 
-Choose **By year** to compare one user's years on the same month/day axis. Enter up to ten years as a list or range, such as `2022-2026`. Each year keeps its own calendar, including leap days; the current year's line stops at the latest available date. Missing dates show a dash in the tooltip.
+## How to use
 
-Yearly comparisons automatically use a second axis when adjacent nonzero totals, sorted by size, have a ratio of at least five. The largest qualifying gap separates the groups: smaller totals use the left axis, larger totals use the right. Both axes start at zero, and the legend and tooltip identify the axis for every year. Similar totals share one axis. Axis assignment stays stable when hiding lines.
+1. Choose **By year** or **By user**.
+2. Enter a username and years, or several usernames and one year. Ranges such as `2022-2026` and comma-separated years both work.
+3. Click **Show**. Hover or tap for daily cumulative values; click a legend entry to hide or restore a line.
 
-The background process stays available after closing the browser. To run with an explicit stop control, use `python app.py` in a terminal and press Ctrl+C when finished.
+![Contribrise comparing the cumulative activity of three fictional accounts on a shared axis.](docs/images/user-comparison.png)
 
-## Data and privacy
+_Account comparison on one shared scale. Switch between English and 日本語 at the top right._
 
-- Data comes directly from GitHub's GraphQL contribution calendar through your existing GitHub CLI login. Successful responses are cached in memory for five minutes.
-- Contributions include qualifying commits and other GitHub activity, including private activity counts that GitHub exposes to the signed-in account. Counts can differ between viewers with different access.
-- The app binds to loopback only. It is intended for local use, not deployment as a public web service with your GitHub credentials.
-- Usernames and language are stored in your browser. Comparison usernames and the year also appear in the URL. Credentials are managed by GitHub CLI and are never sent to the browser or saved by Contribrise.
-- No analytics, third-party scripts, database, or saved contribution history.
+The current year's line stops at the latest available date. Missing dates, including a leap day in a non-leap year, show a dash in the tooltip. Comparison URLs include the usernames, mode, and years, so another Contribrise user can restore the same view.
 
-For GitHub's counting rules, see [Profile contributions reference](https://docs.github.com/en/account-and-profile/reference/profile-contributions-reference).
+<details>
+<summary>How automatic dual axes work</summary>
 
-## Source
+Yearly comparisons sort nonzero totals by size. If adjacent totals differ by at least five times, the largest qualifying gap separates the groups: smaller totals use the left axis, larger totals use the right. Similar totals share one axis.
 
-`app.py` fetches data and serves `index.html`, `style.css`, and `app.js`. The chart uses native SVG. `start.cmd` is the optional Windows launcher.
+Both axes start at zero. The legend and tooltip identify the axis for every year. Axis assignment stays stable when hiding lines. Curves on different axes have different scales; compare values using the labels and tooltip.
+
+</details>
+
+## Local use and privacy
+
+- Data comes directly from GitHub's GraphQL contribution calendar through your existing GitHub CLI login. Results are cached in memory for five minutes.
+- Private activity counts are included when GitHub exposes them to the signed-in account. Viewers with different access may see different counts. See [GitHub's counting rules](https://docs.github.com/en/account-and-profile/reference/profile-contributions-reference).
+- The app runs on your PC and accepts local connections only. Credentials stay with GitHub CLI. There are no analytics, third-party scripts, or saved activity history.
+- Usernames and language are saved in your browser. Usernames and years also appear in comparison URLs.
+
+This repository publishes the source of a local app. It is not a hosted service and should not be deployed publicly with your GitHub credentials.
+
+<details>
+<summary>Port and stopping the app</summary>
+
+The default address is `http://127.0.0.1:8783`. Set another port with `--port`; if the port is occupied by another app, Contribrise selects an available one.
+
+The background process stays available after closing the browser. For an explicit stop control, run `python app.py` in a terminal and press Ctrl+C when finished.
+
+</details>
+
+## Development
+
+`app.py` fetches data and serves `index.html`, `style.css`, and `app.js`. Charts use native SVG. Runtime dependencies are limited to Python's standard library and GitHub CLI.
 
 ```sh
 python -m unittest
